@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Intro to layers</title>
+
+	<style>
+		html,
+		body,
+		#viewDiv {
+			padding: 0;
+			margin: 0;
+			width: 100%;
+			height: 90%;
+		}
+		#layerToggle {
+			top: 20px;
+			right: 20px;
+			position: absolute;
+			z-index: 99;
+			background-color: white;
+			border-radius: 8px;
+			padding: 10px;
+			opacity: 0.75;
+		}
+	</style>
+
+	<link rel="stylesheet" href="https://js.arcgis.com/4.7/esri/css/main.css">
+	<script src="https://js.arcgis.com/4.7/"></script>
+
+</head>
+
+<body>
+	<div id="viewDiv"></div>
+	<span id="layerToggle">
+		<input type="checkbox" id="streetsLyr" checked> Transportation
+	</span>
+	<a href="https://developers.arcgis.com/javascript/latest/sample-code/intro-layers/index.html">Intro to layers</a>
+
+	<script>
+		require([
+			"esri/Map",
+			"esri/views/SceneView",
+			"esri/layers/TileLayer",
+			"dojo/dom",
+			"dojo/on",
+			"dojo/domReady!"
+		], function (Map, SceneView, TileLayer, dom, on) {
+			const transportationLyr = new TileLayer({
+				url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer",
+				id: "streets",
+				visible: false
+			})
+			const housingLyr = new TileLayer({
+				url: "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/New_York_Housing_Density/MapServer",
+				id: "ny-housing",
+				opacity: 0.9
+			})
+			const map = new Map({
+				basemap: "oceans",
+				layers: [housingLyr]
+			})
+			map.layers.add(transportationLyr)
+			const view = new SceneView({
+				container: "viewDiv",
+				map: map
+			})
+			// toggle layer visible
+			const streetsLyrToggle = dom.byId("streetsLyr")
+			on(streetsLyrToggle, "change", function () {
+				// transportationLyr.visible = streetsLyrToggle.checked
+				transportationLyr.visible = this.checked
+			})
+			// layerview create event
+			view.on("layerview-create", function (event) {
+				if (event.layer.id === "ny-housing") {
+					console.log("LayerView for New York housing density created!", event.layerView)
+				}
+				if (event.layer.id === "streets") {
+					console.log("LayerView for streets created!", event.layerView)
+				}
+			})
+			// When the layer's promise resolves,
+			// animate the view to the layer's fullExtent
+			view.when(function () {
+				housingLyr.when(function () {
+					// view.extent = housingLyr.fullExtent
+					view.goTo(housingLyr.fullExtent)
+						.then(function () {
+							return view.goTo(transportationLyr.fullExtent)
+						})
+				})
+			})
+		})
+	</script>
+</body>
+
+</html>
